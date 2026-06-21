@@ -1,0 +1,5 @@
+openai
+ffmpeg-python
+python-docx
+python-dotenv
+streamlit
