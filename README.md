@@ -73,7 +73,7 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-Then open the Streamlit URL in your browser, upload one or more audio files, and download the generated `.docx` files. The web app uses the same pipeline as `main.py`: uploaded files are saved into `input/`, compressed files are created in `compressed/`, and final Word documents are saved in `output/`.
+Then open the Streamlit URL in your browser, upload one or more audio files, and download the generated `.docx` files. The app supports batch upload: select multiple audio files, click **Create Word transcript**, then download each `.docx` individually or download all successful results as `transcripts.zip`. The web app uses the same pipeline as `main.py`: uploaded files are saved into `input/`, compressed files are created in `compressed/`, and final Word documents are saved in `output/`.
 
 Your friend will need:
 

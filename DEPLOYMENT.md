@@ -68,5 +68,6 @@ You could build a Cloudflare architecture later with R2 + Queues + a separate wo
 
 - Hosted files are temporary. The app lets users download the `.docx`; do not rely on the server as permanent storage.
 - Large audio files can take several minutes.
+- Batch uploads are supported; users can download each `.docx` separately or download all successful batch results as `transcripts.zip`.
 - OpenAI Whisper has a compressed file size limit; this app compresses first, then rejects files that are still too large.
 - If multiple people use it simultaneously, output files get a short random prefix to prevent filename collisions.

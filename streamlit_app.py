@@ -8,6 +8,7 @@ import io
 import os
 import re
 import uuid
+import zipfile
 from pathlib import Path
 from typing import Iterable
 
@@ -72,8 +73,9 @@ def process_uploaded_files(uploaded_files: Iterable, keep_compressed: bool) -> l
 
     for uploaded_file in uploaded_files:
         filename = safe_filename(uploaded_file.name)
+        download_name = f"{Path(filename).stem}.docx"
         # Prefix with a short run ID so hosted users do not collide when two people
-        # upload files with the same name. The downloaded .docx keeps this prefix.
+        # upload files with the same name. Download labels keep the original name.
         run_prefix = uuid.uuid4().hex[:8]
         input_path = INPUT_DIR / f"{run_prefix}-{filename}"
         output_path = OUTPUT_DIR / f"{input_path.stem}.docx"
@@ -87,6 +89,7 @@ def process_uploaded_files(uploaded_files: Iterable, keep_compressed: bool) -> l
         results.append(
             {
                 "name": filename,
+                "download_name": download_name,
                 "success": success,
                 "output_path": output_path if output_path.exists() else None,
                 "log": log_buffer.getvalue(),
@@ -94,6 +97,27 @@ def process_uploaded_files(uploaded_files: Iterable, keep_compressed: bool) -> l
         )
 
     return results
+
+
+def create_results_zip(results: list[dict]) -> bytes | None:
+    """Create an in-memory ZIP containing all successfully generated .docx files."""
+    successful_results = [r for r in results if r.get("success") and r.get("output_path")]
+    if not successful_results:
+        return None
+
+    zip_buffer = io.BytesIO()
+    used_names: set[str] = set()
+    with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        for result in successful_results:
+            docx_path = Path(result["output_path"])
+            archive_name = result.get("download_name") or docx_path.name
+            if archive_name in used_names:
+                archive_name = f"{docx_path.stem}.docx"
+            used_names.add(archive_name)
+            zip_file.writestr(archive_name, docx_path.read_bytes())
+
+    zip_buffer.seek(0)
+    return zip_buffer.getvalue()
 
 
 st.title("🎙️ Audio to Word Transcript")
@@ -129,6 +153,9 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True,
 )
 
+if uploaded_files:
+    st.caption(f"Batch ready: {len(uploaded_files)} file(s) selected. They will be processed one at a time.")
+
 if st.button("Create Word transcript", type="primary", disabled=not uploaded_files):
     if not api_key and not api_key_from_secret:
         st.error("Add an OpenAI API key first, or configure OPENAI_API_KEY as a hosting secret.")
@@ -139,6 +166,19 @@ if st.button("Create Word transcript", type="primary", disabled=not uploaded_fil
     with st.spinner("Processing audio. Long files can take several minutes..."):
         results = process_uploaded_files(uploaded_files, keep_compressed=keep_compressed)
 
+    successful_count = sum(1 for r in results if r.get("success") and r.get("output_path"))
+    st.write(f"Batch complete: {successful_count}/{len(results)} file(s) created successfully.")
+
+    zip_bytes = create_results_zip(results)
+    if zip_bytes and successful_count > 1:
+        st.download_button(
+            "Download all .docx files as ZIP",
+            data=zip_bytes,
+            file_name="transcripts.zip",
+            mime="application/zip",
+            key="download-all-transcripts",
+        )
+
     for result in results:
         st.subheader(result["name"])
         if result["success"] and result["output_path"]:
@@ -147,7 +187,7 @@ if st.button("Create Word transcript", type="primary", disabled=not uploaded_fil
             st.download_button(
                 "Download .docx",
                 data=docx_path.read_bytes(),
-                file_name=docx_path.name,
+                file_name=result.get("download_name") or docx_path.name,
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 key=f"download-{docx_path.name}",
             )
