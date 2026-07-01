@@ -25,6 +25,56 @@ st.set_page_config(
     layout="centered",
 )
 
+st.markdown(
+    """
+    <style>
+    html, body, [class*="css"] {
+        font-size: 19px;
+    }
+
+    .stApp {
+        font-size: 1.08rem;
+    }
+
+    h1 {
+        font-size: 3rem !important;
+        line-height: 1.12 !important;
+    }
+
+    h2, [data-testid="stHeader"] h2 {
+        font-size: 2.25rem !important;
+    }
+
+    h3 {
+        font-size: 1.65rem !important;
+    }
+
+    p, li, label, div[data-testid="stMarkdownContainer"],
+    div[data-testid="stText"], div[data-testid="stAlert"] {
+        font-size: 1.08rem !important;
+        line-height: 1.65 !important;
+    }
+
+    .stButton button, .stDownloadButton button,
+    div[data-testid="stFileUploader"] button {
+        font-size: 1.05rem !important;
+        padding: 0.65rem 1rem !important;
+    }
+
+    div[data-testid="stExpander"] summary {
+        font-size: 1.12rem !important;
+        line-height: 1.45 !important;
+    }
+
+    div[data-testid="stCaptionContainer"] {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 SUPPORTED_FORMATS = tuple(ext.lstrip(".") for ext in transcriber.SUPPORTED_FORMATS)
 BASE_DIR = Path(__file__).parent.resolve()
 INPUT_DIR = BASE_DIR / transcriber.INPUT_DIR
