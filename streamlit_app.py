@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import os
 import re
 import uuid
@@ -29,6 +30,15 @@ BASE_DIR = Path(__file__).parent.resolve()
 INPUT_DIR = BASE_DIR / transcriber.INPUT_DIR
 OUTPUT_DIR = BASE_DIR / transcriber.OUTPUT_DIR
 COMPRESSED_DIR = BASE_DIR / transcriber.COMPRESSED_DIR
+LESSONS_PATH = BASE_DIR / "data" / "shaykha_lessons.json"
+
+
+@st.cache_data(show_spinner=False)
+def load_shaykha_lessons() -> list[dict]:
+    """Load the sample interpretive lesson library mined from existing transcript DOCX files."""
+    if not LESSONS_PATH.exists():
+        return []
+    return json.loads(LESSONS_PATH.read_text(encoding="utf-8"))
 
 
 def safe_filename(filename: str) -> str:
@@ -196,6 +206,41 @@ if st.button("Create Word transcript", type="primary", disabled=not uploaded_fil
 
         with st.expander("Processing log"):
             st.code(result["log"] or "No output captured.")
+
+st.divider()
+st.header("📚 Shaykha Golden Insights sample")
+st.caption(
+    "A sample of what this transcript archive can become after extraction: source-grounded "
+    "interpretive lessons with the transcript passage, interpretation, golden insight, and practice."
+)
+
+lessons = load_shaykha_lessons()
+if lessons:
+    themes = sorted({lesson["theme"] for lesson in lessons})
+    selected_theme = st.selectbox(
+        "Filter lessons by theme",
+        ["All themes", *themes],
+        key="shaykha-theme-filter",
+    )
+    filtered_lessons = [
+        lesson for lesson in lessons
+        if selected_theme == "All themes" or lesson["theme"] == selected_theme
+    ]
+    st.write(f"Showing {len(filtered_lessons)} of {len(lessons)} sample lessons mined from the DOCX transcript archive.")
+
+    for lesson in filtered_lessons:
+        with st.expander(f"{lesson['id']:02d}. {lesson['title']}", expanded=False):
+            st.caption(f"{lesson['theme']} • {lesson['sourceDate']} • {lesson['sourceTitle']}")
+            st.markdown("**Transcript passage**")
+            st.info(f"“{lesson['passage']}”")
+            st.markdown("**Interpretation**")
+            st.write(lesson["interpretation"])
+            st.markdown("**Golden insight**")
+            st.success(lesson["goldenInsight"])
+            st.markdown("**Practice**")
+            st.write(lesson["practice"])
+else:
+    st.warning("No sample lesson data found. Expected `data/shaykha_lessons.json`.")
 
 st.divider()
 st.markdown(
